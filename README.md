@@ -1,3 +1,5 @@
+[Pytorch学习视频](https://www.bilibili.com/video/BV1CZ4y1w7mE?p=1)
+
 # Layer形状变换总结
 
 ## 1.nn.Linear(input, output)
@@ -266,8 +268,26 @@ from tqdm import tqdm
 tqdm(enumerate(data_loader), total=len(data_loader), ascii=True, desc='测试：')
 ```
 
-
-
 ## 11.端到端含义
 
 **构建模型直接对原始数据进行处理，最终生成 相应的结果，该过程无须对数据进行别的转换**
+
+## 12.巧妙划分train、test数据集比例
+
+**如果数据是一条一条进行处理的，且希望在处理的过程中就对train、test的比例进行划分，可以使用这种方法划分比例**
+
+```python
+'''
+    每次从该list中随机取一个，如果取出的值为1，则划为测试集
+    这样就可以巧妙的控制划分的比例
+    train/test = 3/1
+    即有25%的数据作为测试集
+'''
+train_test_split = [0,0,0,1]
+
+if random.choice(train_test_split) == 1:	# 如果随机选择的数据为1，则放入测试集；否则放入训练集
+    test_file.write(line_cut + '\n')
+else:
+	train_file.write(line_cut + '\n')
+```
+
