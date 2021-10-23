@@ -1,5 +1,19 @@
 [Pytorch学习视频](https://www.bilibili.com/video/BV1CZ4y1w7mE?p=1)
 
+### 自然语言处理常用标识符
+
+```python
+'''
+    自然语言处理常用标识符:
+        <UNK>: 低频词或未在词表中的词
+        <PAD>: 补全字符
+        <GO>/<SOS>: 句子起始标识符
+        <EOS>: 句子结束标识符
+        [SEP]：两个句子之间的分隔符
+        [MASK]：填充被掩盖掉的字符
+'''
+```
+
 # Layer形状变换总结
 
 ## 1.nn.Linear(input, output)
@@ -21,6 +35,7 @@ x = self.fc(x) # [batch_size, input_size]-->[batch_size, output_size]
 
 1. `num_embeddings`：词典的大小（整个数据集中不重复词语的个数）
 2. `embedding_dim`：embedding的维度（用多长的一个向量来表示词语）
+3. `padding_idx`: （`必须为数字`）自然语言中使用批处理时候, 每个句子的长度并不一定是等长的, 这时候就需要对较短的句子进行padding, 填充的数据一般是0, 这个时候, 在进行词嵌入的时候就会进行相应的处理, nn.embedding会将填充的映射为0。**指定padding_idx后那么在计算梯度的时候就不会对该值进行梯度的更新，故会加快训练速度**以3 为例, 也就是说补长句子的时候是以3padding的, 这个时候我们液晶padding_idx设为3
 
 ```python
 # 使用
@@ -68,7 +83,41 @@ LSTM的输出为: batch_first=True
 '''
 ```
 
+## 4.nn.GRU()
 
+GRU模块`torch.nn.GRU`，和LSTM的参数相同，含义相同，具体可参考文档
+
+但是输入只剩下`gru(input,h_0)`，输出为`output, h_n`
+
+其形状为：
+
+1. `output`:`(seq_len, batch, num_directions * hidden_size)`
+
+2. `h_n`:`(num_layers * num_directions, batch, hidden_size)`
+
+    ## 5.pack_padded_sequence(打包),pad_packed_sequence(解包) 
+
+    `pack_padded_sequence`包的作用是**embedding后的结果打包**，然后传递给LSTM或GRU
+
+    `pad_packed_sequence`包的作用是将**LSTM或GRU的output解包**
+
+    这两个包可以加速LSTM或GRU的训练过程
+
+    ```python
+    '''
+    pack_padded_sequence中:
+    	input_length 为输入句子的长度
+    	
+    pad_packed_sequence中:
+    	padding_value 为解包时要还原的PAD，和nn.Embedding中的padding_idx意义相同
+    '''
+    embeded = self.embedding(input) # [batch_size, max_len, embedding_dim] [128, 9, 100]
+    embeded = pack_padded_sequence(embeded, input_length, batch_first=True)  # 把embedding后的结果打包
+    output, hidden = self.gru(embeded)
+    output = pad_packed_sequence(output, batch_first=True, padding_value=config.num_sequence.PAD)    # 把gru的输出解包 output:[batch_size, max_len, num_directions*hidden_size] [128, 9, 1*64]
+    ```
+
+    
 
 # Pytorch学习过程问题总结
 
@@ -82,14 +131,14 @@ LSTM的输出为: batch_first=True
 
 解决问题的思路：考虑自定义一个`collate_fn`，观察结果
 
- ```python
+```python
 # collate_fn的作用是对每一个batch进行处理
 # 因为torch默认的default_collate在处理文本时会出错，故这里对collate_fn方法进行重写
 def collate_fn(batch):
     '''
     #batch是list，其中是一个一个元组，每个元组是dataset中__getitem__的结果 即：(text, label)
     batch: [(text, label), (text, label), ...]
-    :return:
+    :return: text:[text1, text2, ...]  label:[label1, label2, ...]
     '''
     print('batch', batch)
     text, label = list(zip(*batch))
@@ -97,7 +146,7 @@ def collate_fn(batch):
   
   																															# ↓
 dataloader = DataLoader(dataset=dataset, batch_size=2, shuffle=True, collate_fn=collate_fn)
- ```
+```
 
 ## 2.AttributeError: Can't get attribute 'word2seq' on <module '__main__' from 'E:/Pycharm/Pytorch学习/2.自然语言处理/utils/lib.py'>
 
@@ -126,6 +175,7 @@ def collate_fn(batch):
     '''
         注意 input 和 label都需要是LongTensor类型
     '''
+    # text, label = torch.LongTensor(text), torch.LongTensor(label)
     text, label = torch.tensor(text, dtype=torch.long), torch.tensor(label, dtype=torch.long)
     return text, label
 ```
@@ -158,6 +208,31 @@ x = x.contiguous().view([-1, lib.max_len*lib.hidden_size])
 ```
 
 
+
+## 7.处理GitHub上的不允许100MB大文件上传
+
+**删除掉commit中的大文件**
+
+```python
+# 1.在pycharm中底部的git标签页下的console中查看超过100MB的文件
+通常会明确告诉你哪个文件超过了100MB
+
+# 2.从已经commit的任务中移除掉大文件
+git rm --cached <大文件路径>
+
+# 3.提交操作
+git commit --amend -CHEAD
+
+之后重新push即可正常推送
+```
+
+## 8.pycharm 函数下输入三个“““回车后不出现参数，返回值等注释
+
+```python
+修改设置FIle-setting-Tools-Python Integrated Tools-Docstrings-Docstring formart,修改为自己想用的，推荐Epytext
+```
+
+![image-20211023170451014](C:\Users\KPL\AppData\Roaming\Typora\typora-user-images\image-20211023170451014.png)
 
 # 编程技巧
 
@@ -227,7 +302,7 @@ ws = pickle.load(open('../model_data/ws.pkl', 'rb'))
 # ws即为之前保存的对象
 ```
 
-##7.字符串快速填充多个指定字符
+## 7.字符串快速填充多个指定字符
 
 ```python
 # 如果句子长度小于max_len则对句子填充max_len-len(text)个'PAD'

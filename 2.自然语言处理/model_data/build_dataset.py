@@ -64,7 +64,8 @@ def collate_fn(batch):
     '''
         注意 input 和 label都需要是LongTensor类型
     '''
-    text, label = torch.tensor(text, dtype=torch.long), torch.tensor(label, dtype=torch.long)
+    # text, label = torch.tensor(text, dtype=torch.long), torch.tensor(label, dtype=torch.long)
+    text, label = torch.LongTensor(text), torch.LongTensor(label)
     return text, label
 
 

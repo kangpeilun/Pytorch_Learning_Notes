@@ -26,13 +26,27 @@ class Classify():
 
     def test(self):
         model = fasttext.load_model(config.classify_model_path)
-        test_data = [text.split('\t')[0] for text in open(self.test_data, encoding='utf-8').readlines()]
-        lables, scores = model.predict(test_data)  # 加载测试数据进行预测
-        # lables [['__label__chat'], ['__label__chat'], ['__label__chat'], ['__label__chat'], ['__label__chat'], ['__label__chat'], ['__label__chat'], ['__label__chat'], ['__label__chat'], ['__label__chat']]
-        # scores [array([1.00001], dtype=float32), array([1.0000099], dtype=float32), array([1.00001], dtype=float32), array([1.00001], dtype=float32), array([1.00001], dtype=float32), array([1.00001], dtype=float32), array([1.00001], dtype=float32), array([1.00001], dtype=float32), array([0.99937207], dtype=float32), array([1.00001], dtype=float32)]
-        print('acc:', (sum(scores) / len(test_data))[0])
+        test_data =[]
+        label_data = []
+        for line in open(self.test_data, encoding='utf-8').readlines():
+            text = line.split('\t')[0]
+            label = line.split('\t')[1]
+            test_data.append(text)
+            label_data.append(label)
 
-    def is_QA(self, label, score):
+        lables, scores = model.predict(test_data)  # 加载测试数据进行预测
+        sum = 0
+        for label,pre_label in zip(label_data, lables):
+            if label.replace('\n', '') == pre_label[0]:
+                sum+=1
+        print('acc:', round(sum/len(test_data),4))
+
+    def __is_QA(self, label, score):
+        '''
+            预测结果的判定由人为来决定
+            __label__chat 和 __label__QA 的分数都有可能很高，但为了通过分数区分，我们人为的缩小__label__chat的分数值
+            相当于，我们把得分小的作为 __label__chat，而得分高的作为 __label__QA
+        '''
         if label[0] == '__label__chat':
             score = 1 - score
 
@@ -45,26 +59,6 @@ class Classify():
         model = fasttext.load_model(config.classify_model_path)
         sentence = ' '.join(cut(sentence))
         label, score = model.predict(sentence)
-        pred = self.is_QA(label, score)
+        pred = self.__is_QA(label, score)
         print('预测结果:', pred)
         return pred
-
-
-def build_classify_model():
-    '''
-    wordNgrams=1 每连续的1个字作为一个词语
-    minCount=5
-    :return:
-    '''
-    model = fasttext.train_supervised(config.classify_train_path, epoch=20, wordNgrams=1, minCount=5)
-    model.save_model(config.classify_model_path)
-
-
-def get_classify_model():
-    '''加载模型'''
-    model = fasttext.load_model(config.classify_model_path)
-    return model
-
-
-def eval():
-    pass
