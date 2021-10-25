@@ -91,9 +91,11 @@ GRU模块`torch.nn.GRU`，和LSTM的参数相同，含义相同，具体可参�
 
 其形状为：
 
-1. `output`:`(seq_len, batch, num_directions * hidden_size)`
+`batch_first=True`
 
-2. `h_n`:`(num_layers * num_directions, batch, hidden_size)`
+1. `output`:`(batch, seq_len, num_directions * hidden_size)`
+
+2. `h_n`:`(batch, num_layers * num_directions, hidden_size)`
 
     ## 5.pack_padded_sequence(打包),pad_packed_sequence(解包) 
 
@@ -103,18 +105,32 @@ GRU模块`torch.nn.GRU`，和LSTM的参数相同，含义相同，具体可参�
 
     这两个包可以加速LSTM或GRU的训练过程
 
+    **注意两个包的输入和输入**
+
+    ```python
+    # 返回打包后的结果，形状和embedding之后的一样
+    embeded = pack_padded_sequence(embeded, input_length, batch_first=True)
+    
+    # 返回解包之后的结果，以及每个batch中每个序列的长度
+    output, output_length = pad_packed_sequence(output, batch_first=True, padding_value=config.num_sequence.PAD, total_length=config.max_len)
+    ```
+
     ```python
     '''
     pack_padded_sequence中:
-    	input_length 为输入句子的长度
+    	input_length 为输入句子的长度, 其形状要和batch进行匹配
     	
     pad_packed_sequence中:
     	padding_value 为解包时要还原的PAD，和nn.Embedding中的padding_idx意义相同
+    	total_length=config.max_len  告诉pad_packed_sequence中句子最大长度是多少
+    	返回值为 sentence, sentence_length
+    		sentence： 句子
+    		sentence： 每条句子本身的长度
     '''
     embeded = self.embedding(input) # [batch_size, max_len, embedding_dim] [128, 9, 100]
     embeded = pack_padded_sequence(embeded, input_length, batch_first=True)  # 把embedding后的结果打包
     output, hidden = self.gru(embeded)
-    output = pad_packed_sequence(output, batch_first=True, padding_value=config.num_sequence.PAD)    # 把gru的输出解包 output:[batch_size, max_len, num_directions*hidden_size] [128, 9, 1*64]
+    output, output_length = pad_packed_sequence(output, batch_first=True, padding_value=config.num_sequence.PAD, total_length=config.max_len)    # 把gru的输出解包 output:[batch_size, max_len, num_directions*hidden_size] [128, 9, 1*64]
     ```
 
     
@@ -232,7 +248,7 @@ git commit --amend -CHEAD
 修改设置FIle-setting-Tools-Python Integrated Tools-Docstrings-Docstring formart,修改为自己想用的，推荐Epytext
 ```
 
-![image-20211023170451014](C:\Users\KPL\AppData\Roaming\Typora\typora-user-images\image-20211023170451014.png)
+![image-20211023170451014](https://raw.githubusercontent.com/kangpeilun/images/main/images/image-20211023170451014.png)
 
 # 编程技巧
 

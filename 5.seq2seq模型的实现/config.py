@@ -15,7 +15,8 @@ num_sequence = Num_sequence()
 train_batch_size = 128  # 训练
 test_batch_size = 256   # 测试
 max_len = 9  # 句子的最大长度
-embedding_dim = 100
+num_embedding = len(num_sequence)  # 词典中不同种类词的个数
+embedding_dim = 100     # 词向量的维度
 # GRU
 num_layer = 1
 hidden_size = 64
