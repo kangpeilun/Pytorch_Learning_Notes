@@ -1,5 +1,25 @@
 [Pytorch学习视频](https://www.bilibili.com/video/BV1CZ4y1w7mE?p=1)
 
+
+
+# 说在前面
+
+因为本人之后的研究方向是图像处理，本仓库内的代码仅学习到视频教程中的P80，之后如果我仍有心思的话，可能会接着学习下去。
+
+作为一个将Pytorch作为进行深度学习研究的人来说，P80之前的内容足够带领我深入体验整个Pytorch的使用流程，以及深度学习相关的基础知识。
+
+相信你们在认真学习之后对深度学习也会有一个比较全面的认识，这个视频教程其实讲的挺好的了，因为你得明白老师不可能面面俱到的都给你讲到。我的做法是，`遇到不懂的，暂停视频，打开百度、谷歌，搜索扣知识点，然后在代码中做详细的注释。一定不能手懒，代码一定要跟着视频中敲，即使代码有重复的，也要重新敲一遍，加强记忆。尤其当你还是一个新人的时候`
+
+作为一个也才正式进入深度学习研究领域的人来说，我也有许多不明白的地方，如果你在学习过成功有什么疑惑，有什么经验，需要有人交流，请和我联系：
+
+```python
+# 请注明你的来意
+QQ: 374774222
+Email: 374774222@qq.com
+```
+
+------
+
 ### 自然语言处理常用标识符
 
 ```python
@@ -100,7 +120,7 @@ GRU模块`torch.nn.GRU`，和LSTM的参数相同，含义相同，具体可参�
 
 1. `output`:`(batch, seq_len, num_directions * hidden_size)`
 
-2. `h_n`:`(batch, num_layers * num_directions, hidden_size)`
+2. `h_n`:`(num_layers * num_directions, batch, hidden_size)`
 
     ## 5.pack_padded_sequence(打包),pad_packed_sequence(解包) 
 

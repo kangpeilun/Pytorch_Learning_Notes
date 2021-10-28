@@ -57,7 +57,7 @@ def process_one_line_xiaohuangji(line, train_file, test_file):
             train_file.write(line_cut + '\n')
 
 
-def process_xiaohuangji():
+def process_classify_xiaohuangji():
     '''
     处理小黄鸡闲聊语料
     :return: M 是王若猫的。--> 是 王 若 猫 的 。\t__label__chat
@@ -67,7 +67,7 @@ def process_xiaohuangji():
     with open(config.xiaohuangji_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
         with ThreadPoolExecutor(1000) as t:  # 起100个线程
-            for line in tqdm(lines, total=len(lines), ascii=True):
+            for line in tqdm(lines, total=len(lines), ascii=True, desc='处理闲聊分类数据'):
                 t.submit(process_one_line_xiaohuangji, line=line, train_file=classify_train_file, test_file=classify_test_file)  # 把写入任务提交给线程池
     classify_train_file.close()
     classify_test_file.close()
@@ -87,13 +87,13 @@ def process_one_line_QA(line, train_file, test_file):
     else:
         test_file.write(content_cut + '\n')
 
-def process_QA():
+def process_classify_QA():
     classify_train_file = open(config.classify_train_path, 'a+', encoding='utf-8')
     classify_test_file = open(config.classify_test_path, 'a+', encoding='utf-8')
     questions = pd.read_csv(config.question_path)
     contents = questions['content'].tolist()  # 获取content列所有的数据，并将结果转换为list
     with ThreadPoolExecutor(1000) as t:  # 起100个线程
-        for content in tqdm(contents, total=len(contents), ascii=True):
+        for content in tqdm(contents, total=len(contents), ascii=True, desc='处理分类QA分类数据'):
             t.submit(process_one_line_QA, line=content, train_file=classify_train_file, test_file=classify_test_file)
     classify_train_file.close()
     classify_test_file.close()

@@ -9,6 +9,9 @@
 import pandas as pd
 import config
 import os
+from tqdm import tqdm
+
+from utils.cut_sentence import cut
 
 '''
     在内部的py文件，如果想要调用别的路径下的文件，必须使用相对路径
@@ -43,7 +46,7 @@ def create_QA_data():
     questions, answers = is_file_right()
     temp_questions = []
     temp_answers = []
-    for question_id,question_content in zip(questions['question_id'], questions['content']):
+    for question_id,question_content in tqdm(zip(questions['question_id'], questions['content']), total=len(questions), ascii=True, desc='处理QA闲聊数据'):
         '''
             根据question.csv中的question_id锁定answer.csv对应的答案
             answers[answers['question_id']==question_id]['content']  锁定对应的answer.csv中的答案，并取出对应的content值
@@ -51,14 +54,14 @@ def create_QA_data():
         '''
         try:
             answer_content = answers[answers['question_id']==question_id]['content'].tolist()[0]
-            temp_questions.append(question_content)
-            temp_answers.append(answer_content)
-            print(question_content, '\t',answer_content,)
+            temp_questions.append(cut(question_content))
+            temp_answers.append(cut(answer_content))
+            # print(question_content, '\t',answer_content,)
         except:  # 如果在answer.csv找不到对应的答案，则跳过该行问题
             continue
 
     pd.DataFrame({'question':temp_questions, 'answer':temp_answers}).to_csv(QA_data, index=False)  # 将整理后的数据写入csv文件
-    print('Finish Create data!')
+    # print('Finish Create data!')
 
 
 if __name__ == '__main__':

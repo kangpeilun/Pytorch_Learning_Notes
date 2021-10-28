@@ -18,11 +18,19 @@ answer_path = 'data/corpus/QA_data/answer.csv'  # 答案
 question_path = 'data/corpus/QA_data/question.csv' # 问题
 
 # 闲聊语料
-xiaohuangji_path = 'data/corpus/chat_data/xiaohuangji_weifenci.conv'  # 小黄鸡未分词
+xiaohuangji_path = 'data/corpus/QA_data/xiaohuangji_weifenci.conv'  # 小黄鸡未分词
 
 # classify fasttext分类语料准备——闲聊语料 以及 QA语料
 classify_train_path = 'data/corpus/classify/classify_train.txt'  # 训练数据
 classify_test_path = 'data/corpus/classify/classify_test.txt'   # 测试数据
 
+# chat_bot 闲聊机器人训练/测试数据
+chat_train_path = 'data/corpus/chat_data/chat_train.txt'  # 闲聊训练数据
+chat_test_path = 'data/corpus/chat_data/chat_test.txt'  # 闲聊测试数据
+
 #=====================================分类相关===========================================
 classify_model_path = 'model/classify.pt'   # 分类模型保存的路径
+
+
+#=====================================闲聊相关===========================================
+chat_model_path = 'model/chat.pt'
