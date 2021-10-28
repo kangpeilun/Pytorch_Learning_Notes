@@ -17,7 +17,7 @@ class Num_sequence():
         [SEP]：两个句子之间的分隔符
         [MASK]：填充被掩盖掉的字符
     '''
-    PAD_TAG = 'PAG'
+    PAD_TAG = 'PAD'
     UNK_TAG = 'UNK'
     SOS_TAG = 'SOS'  # 句子开始符号
     EOS_TAG = 'EOS'  # 结束符

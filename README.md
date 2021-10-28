@@ -68,6 +68,11 @@ self.lstm = nn.LSTM(input_size,hidden_size,num_layers,batch_first,dropout,bidire
 x = self.embedding(x)
 x,(h_n, c_n) = self.lstm(x, (h_0, c_0))
 # [batch_size, seq_len, embedding_dim]-->[batch_size, seq_len, num_directions * hidden_size]
+
+PS: batch_first=True 只会影响output，不会影响h_n, c_n
+    也就是说只有output的batch_size会被放在第一维
+    h_n, c_n 的batch_size仍会被放在第二维
+
 '''
 LSTM的输入为: batch_first=True
   input: [batch_size, seq_len, embedding_dim]   
@@ -78,8 +83,8 @@ LSTM的输入为: batch_first=True
 '''
 LSTM的输出为: batch_first=True
 	output: [batch_size, seq_len, num_directions * hidden_size]
-	h_n: [batch_size, num_layers * num_directions, hidden_size]
-	c_n: [batch_size, num_layers * num_directions, hidden_size]
+	h_n: [num_layers * num_directions, batch_size, hidden_size]
+	c_n: [num_layers * num_directions, batch_size, hidden_size]
 '''
 ```
 
@@ -250,7 +255,116 @@ git commit --amend -CHEAD
 
 ![image-20211023170451014](https://raw.githubusercontent.com/kangpeilun/images/main/images/image-20211023170451014.png)
 
-# 编程技巧
+## 9.**batch_first=True只会影响output的结果**
+
+```python
+PS: batch_first=True 只会影响output，不会影响h_n, c_n
+    也就是说只有output的batch_size会被放在第一维
+    h_n, c_n 的batch_size仍会被放在第二维
+```
+
+## 10.ValueError: Expected target size (128, 14), got torch.Size([128, 10])
+
+计算loss时一般遵循这样的规则：
+
+​		**二维tensor和一维tensor进行计算**
+
+​		三维tensor和二维tensor进行计算
+
+```python
+loss = F.nll_loss(decoder_outputs, label)
+```
+
+此例中decoder_outputs形状为[128, 10, 14]；label形状为[128, 10]
+
+但因为未知的原因而无法计算
+
+解决办法：`人为的将三维和二维的tensor降为二维和一维`
+
+```python
+decoder_outputs.view(decoder_outputs.size(0)*decoder_outputs.size(1), -1)
+# 将decoder_outputs的第一个维度和第二个维度相乘，最后一个维度设为-1(表示自动适应)
+
+label.view(-1)  # [batch_size*max_len]
+# 因为label是二维的，直接设为-1(表示自动适应，即可自动变为一维)
+```
+
+```python
+decoder_outputs = decoder_outputs.view(decoder_outputs.size(0)*decoder_outputs.size(1), -1)  
+# [batch_size*max_len, vacab_size]
+label = label.view(-1)  # [batch_size*max_len]
+loss = F.nll_loss(decoder_outputs, label) # 计算loss
+```
+
+## 11.**Pytorch只要是自己造的数据在分配device是，都应该分配一遍**
+
+应该 `.to(device)` 的有：
+
+```python
+1.实例化之后的模型
+	seq2seq = Seq2Seq().to(config.device)
+    
+2.模型的input，label
+    input = input.to(config.device)
+    label = label.to(config.device)
+    input_length = input_length.to(config.device)
+    
+3.创建模型过程中自己定义的用于存放数据的中间变量
+'''
+	这里的decoder_input、decoder_outputs均为NumDecoder模型中自定义的存放中间变量的tensor
+'''
+	decoder_input = torch.LongTensor([[config.num_sequence.SOS]]*config.train_batch_size).to(config.device)
+    
+	decoder_outputs = torch.zeros([config.train_batch_size, config.max_len+1, config.num_embedding]).to(config.device)
+```
+
+## 12.expected hidden size (1,256,64), got[1,32,64]
+
+在使用pytorch的 LSTM (RNN) 构建多类文本分类网络时遇到此错误，网络结构没有问题，能够运行起来，但是运行到几个batch后就报错expected hidden size (1,256,64), got[1,32,64]
+
+`原因`：
+
+​		该错误是由于的训练数据不能被批量大小整除造成的。前面的batch都是256个，但是最后一个batch不足256，只有136个。
+
+`解决办法`:
+
+1.  修改batchsize，让数据集大小能整除batchsize
+
+2.  `如果使用Dataloader，设置一个参数drop_last=True，会自动舍弃最后不足batchsize的batch`
+
+    ## 13.ValueError: only one element tensors can be converted to Python scalars
+
+    获取tensor中元素的值有两种方法
+
+    1.  `tensor.item()` 当tensor中只有一个值时，可以使用该方法获取其中的值。`使用item()取多个值的话就会报上面的错误`
+
+        ```python
+        x = torch.randn(1)
+        print(x)
+        print(x.item())
+         
+        # 结果:
+        tensor([-0.4464])
+        -0.44643348455429077
+        ```
+
+    2.  `tensor.data` 当tensor中包含多个值时，可以使用该方法将所有的值都取出
+
+        ```python
+        x = torch.tensor([[-0.431], [0.2312]])
+        print(x)
+        print(x.data)
+        
+        # 结果:
+        tensor([[-0.431], [0.2312]])
+        tensor([[-0.431], [0.2312]])
+        ```
+
+        
+
+    
+
+    # 编程技巧
 
 ## 1.self.count.get(word, 0) + 1 巧妙统计词频
 
@@ -359,6 +473,39 @@ from tqdm import tqdm
 tqdm(enumerate(data_loader), total=len(data_loader), ascii=True, desc='测试：')
 ```
 
+###### 进阶用法
+
+1.可以把tqdm当作一个可迭代对象
+
+```python
+bar = tqdm(enumerate(train_dataloader), total=len(train_dataloader), ascii=True)
+```
+
+2.针对这个对象可以设置更多个性化内容
+
+```python
+bar.set_description('train epoch:{}\tindex:{}\tloss:{:.3f}'.format(epoch, index, loss.item()))
+```
+
+完整代码
+
+```python
+bar = tqdm(enumerate(train_dataloader), total=len(train_dataloader), ascii=True)
+    for index, (input, label, input_length, label_length) in bar:
+        optimizer.zero_grad()  # 梯度置0
+        decoder_outputs, _ = seq2seq(input, label, input_length, label_length)
+        decoder_outputs = decoder_outputs.view(decoder_outputs.size(0)*decoder_outputs.size(1), -1)  # [batch_size*max_len, vacab_size]
+        label = label.view(-1)  # [batch_size*max_len]
+        loss = F.nll_loss(decoder_outputs, label) # 计算loss
+        loss.backward()  # 反向传播
+        optimizer.step() # 参数更新
+
+        bar.set_description('train epoch:{}\tindex:{}\tloss:{:.3f}'.format(epoch, index, loss.item()))
+        if index % 100 == 0:
+            torch.save(seq2seq.state_dict(), config.model_save_path)
+            torch.save(optimizer.state_dict(), config.optimizer_save_path)
+```
+
 ## 11.端到端含义
 
 **构建模型直接对原始数据进行处理，最终生成 相应的结果，该过程无须对数据进行别的转换**
@@ -380,5 +527,102 @@ if random.choice(train_test_split) == 1:	# 如果随机选择的数据为1，则
     test_file.write(line_cut + '\n')
 else:
 	train_file.write(line_cut + '\n')
+```
+
+## 13.torch.topk()快速获取tensor某一维度的前k个最大值及其索引
+
+```python
+torch.topk(decoder_output, 1) 获取tensor中最大的一个值, 默认从tensor的最后一维获取数据
+    input：就是输入的tensor，也就是要取topk的张量
+    k：就是取前k个最大的值。
+    dim：就是在哪一维来取这k个值。
+    lagest：默认是true表示取前k大的值，false则表示取前k小的值
+    sorted：是否按照顺序输出，默认是true。
+
+返回值:
+    value: 最大值的数值
+	index: 最大值所在索引位置
+```
+
+## 14.切片快速合并多个tensor
+
+如果tensor1的形状为**[batch_sizem, max_len, vacab_len]**
+
+​	   tensor2的形状为**[batch_size, vacab_len]**
+
+那么就可以通过切片将tensor2合并到tensor1中
+
+```python
+for t in max_len:
+    tensor1[:, t, :] = tensor2
+```
+
+## 15.np.random.seed(10)设置随机种子，防止数据集变化
+
+为了防止每次重新进行训练之后，导致数据集发生变化，可以设置随机种子
+
+```python
+np.random.seed(10)  # 在seed()中填入种子数
+```
+
+## 16.**在使用Dataloader的collate_fn处理batch时，最好将每一组数据都转为torch.LongTensor类型**
+
+否则在`.to(device)`时会出错
+
+## 17.快速对list内容进行填充，变成所需形状
+
+```python
+# 1.在 列 方向上快速填充
+[[SOS]]*batch_size
+# 快速生成batch_size行[SOS]
+结果：
+	[
+        [SOS],
+        [SOS],
+        [SOS],
+        [SOS],
+        [SOS],
+        ......
+    ]
+    
+
+# 2.在 行 方向上快速填充
+[SOS]*batch_size
+结果：
+	[SOS, SOS, SOS, SOS, SOS, ......]
+```
+
+## 18.使用numpy快速判断两个list是否相等，并计算相等的个数
+
+```python
+'''
+    使用numpy 将预测值 和 真实值 进行比较，并返回两个矩阵中对应元素是否相等的布尔值
+    布尔值可以直接求和
+'''
+total_correct = sum(array1==array2)
+```
+
+```python
+(array1 == array2) 返回两个矩阵中对应元素是否相等的逻辑值
+
+(array1 == array2).all()当两个矩阵所有对应元素相等，返回一个逻辑值True
+
+(array1 == array2).any()当两个矩阵所有任何一个对应元素相等，返回一个逻辑值True
+
+>>> a = np.array([1,2,3])
+>>> b = np.array([1,2,3])
+>>> c = np.array([1,2,4])
+>>> a == b
+array([ True,  True,  True])
+>>> a == c
+array([ True,  True, False])
+>>> (a == b).all()
+True
+>>> (a == c).all()
+False
+>>> (a == b).any()
+True
+>>> (a == c).any()
+True
 ```
 

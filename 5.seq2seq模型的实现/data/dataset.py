@@ -12,9 +12,17 @@ import numpy as np
 import config
 
 class NumDataset(Dataset):
-    def __init__(self):
+    def __init__(self, train=True):
+        '''
+        @param train: 默认为True，表示生成测试集
+        '''
         # 使用numpy随机创建一组数据
+        np.random.seed(10)  # 设置随机种子，防止每次重新训练之后，数据集发生变化
         self.data = np.random.randint(0, 1e8, size=[500000])
+        if train:
+            self.data = self.data[:400000]  # 使用前 400000 个数据用于训练
+        else:
+            self.data = self.data[400000:]  # 使用后 100000 个数据用于测试
 
     def __getitem__(self, item):
         '''
@@ -43,13 +51,14 @@ def collate_fn(batch):
     batch = sorted(batch, key=lambda x:x[2], reverse=True)
     input, label, input_length, label_length = zip(*batch)
     input = torch.LongTensor([config.num_sequence.transform(i, max_len=config.max_len) for i in input])  # 对每一个输入进行处理
-    label = torch.LongTensor([config.num_sequence.transform(i, max_len=config.max_len+1, add_eos=True) for i in label])  # 对每一个输入进行处理
+    label = torch.LongTensor([config.num_sequence.transform(i, max_len=config.max_len+1, add_eos=True) for i in label])  # 对每一个输入进行处理 [[],[]]
+    input_length = torch.LongTensor(input_length)
+    label_length = torch.LongTensor(label_length)
     return input, label, input_length, label_length
 
 
-train_dataloader = DataLoader(NumDataset(), batch_size=config.train_batch_size, shuffle=True, collate_fn=collate_fn)
-# TODO: 创建测试集
-# test_dataloader =
+train_dataloader = DataLoader(NumDataset(train=True), batch_size=config.train_batch_size, shuffle=True, collate_fn=collate_fn, drop_last=True)
+test_dataloader = DataLoader(NumDataset(train=False), batch_size=config.test_batch_size, collate_fn=collate_fn, drop_last=True)
 
 if __name__ == '__main__':
     for input, label, input_length, label_length in train_dataloader:
