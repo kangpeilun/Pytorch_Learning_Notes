@@ -1,6 +1,6 @@
 [Pytorch学习视频](https://www.bilibili.com/video/BV1CZ4y1w7mE?p=1)
 
-
+[<img src="https://api.gitsponsors.com/api/badge/img?id=419724236" height="50">](https://api.gitsponsors.com/api/badge/link?p=Oayz5wkpc6Em+Yg4VaXD2MlT85DR7HBfFYJZDQJJRGC4YS+b8gKr/CXo7e4KbGrN+6xmlCbcxnzAsoQdf+mjbdEg0w55SzCg5Vk01a7SPCYotuNUoVj/NWOVlvzxV75ZcXmiziX6Bf8mBZnREj1U7A==)
 
 # 说在前面
 
@@ -14,11 +14,6 @@
 
 作为一个也才正式进入深度学习研究领域的人来说，我也有许多不明白的地方，如果你在学习过成功有什么疑惑，有什么经验，需要有人交流，请和我联系：
 
-```python
-# 请注明你的来意
-QQ: 374774222
-Email: 374774222@qq.com
-```
 
 ------
 
